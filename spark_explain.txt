@@ -1,0 +1,28 @@
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("eCommerce").getOrCreate()
+
+itemsSchema = ("itemid integer, name string, price float")
+ordersSchema=("orderid integer, itemid integer, cnt integer")
+
+items = spark.createDataFrame([[10, "Shirt", 30.0], \
+                               [11, "TShirt", 50.5], \
+                               [12, "Pant",  70.0]], \
+                              schema=itemsSchema)
+orders = spark.createDataFrame([[100, 10, 1], \
+                                [100, 11, 1], \
+                                [101, 12, 3], \
+                                [102, 12, 8]],\
+                               schema=ordersSchema)
+
+items.createOrReplaceTempView("ITEMS")
+orders.createOrReplaceTempView("ORDERS")
+
+joined_df = items.join(orders, ["itemid"])
+
+final_df = joined_df.select(joined_df.name, joined_df.price,joined_df.cnt)\
+.where(joined_df.itemid=='12')\
+.groupBy(joined_df.name,joined_df.price)\
+.agg(sum(joined_df.cnt))
+
+final_df.explain()
